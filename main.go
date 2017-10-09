@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
@@ -47,17 +46,6 @@ func main() {
 		}
 		time.Sleep(1 * time.Minute)
 	}
-}
-
-func checkLink(link string, c chan string) {
-	_, err := http.Get(link)
-	if err != nil {
-		fmt.Println(link, "might be down!")
-		c <- link
-		return
-	}
-	fmt.Println(link, "is up!")
-	c <- link
 }
 
 func sendNotification(action string, ticket string, title string, link string) {
