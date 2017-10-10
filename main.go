@@ -17,6 +17,17 @@ type jiraConfig struct {
 	password string
 }
 
+type jiraIssue struct {
+	*jira.Issue
+}
+
+type notification struct {
+	body     string
+	title    string
+	subtitle string
+	link     string
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -41,24 +52,44 @@ func main() {
 		issues, _, _ := jiraClient.Issue.Search(jql, nil)
 		if len(issues) > 0 {
 			for _, issue := range issues {
-				sendNotification("You have new activity", issue.Key, issue.Fields.Summary, jc.host+"browse/"+issue.Key)
+
+				n := newNotificationFromIssue(issue)
+				fmt.Println(issue.Key, "has some changes ->", jiraIssue{&issue}.getLink())
+
+				go func(n notification) {
+					sendNotification(n)
+					time.Sleep(5 * time.Second)
+				}(n)
 			}
 		}
 		time.Sleep(1 * time.Minute)
 	}
 }
 
-func sendNotification(action string, ticket string, title string, link string) {
-	note := gosxnotifier.NewNotification(action)
-	note.Title = ticket
-	note.Subtitle = title
+func sendNotification(n notification) {
+	note := gosxnotifier.NewNotification(n.body)
+	note.Title = n.title
+	note.Subtitle = n.subtitle
 	note.Sound = gosxnotifier.Blow
 	note.Group = "com.osuka42g.JiraNotifier"
-	note.Link = link
+	note.Link = n.link
 	note.AppIcon = "assets/jiraicon.ico"
 	err := note.Push()
 
 	if err != nil {
 		log.Println(err)
 	}
+}
+
+func newNotificationFromIssue(i jira.Issue) notification {
+	return notification{
+		body:     "You have new activity",
+		title:    i.Key,
+		subtitle: i.Fields.Summary,
+		link:     jiraIssue{&i}.getLink(),
+	}
+}
+
+func (ji jiraIssue) getLink() string {
+	return os.Getenv("JIRA_HOST") + "browse/" + ji.Key
 }
