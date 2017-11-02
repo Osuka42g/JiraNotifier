@@ -54,7 +54,7 @@ func main() {
 			for _, issue := range issues {
 
 				n := newNotificationFromIssue(issue)
-				fmt.Println(issue.Key, "has some changes ->", jiraIssue{&issue}.getLink())
+				fmt.Println(issue.Key, "has some changes ->", jiraIssue{&issue}.getLink(), "at", timeNow())
 
 				go func(n notification) {
 					sendNotification(n)
@@ -62,7 +62,7 @@ func main() {
 				}(n)
 			}
 		}
-		time.Sleep(1 * time.Minute)
+		time.Sleep((1 * time.Minute) - (1 * time.Second))
 	}
 }
 
@@ -92,4 +92,9 @@ func newNotificationFromIssue(i jira.Issue) notification {
 
 func (ji jiraIssue) getLink() string {
 	return os.Getenv("JIRA_HOST") + "browse/" + ji.Key
+}
+
+func timeNow() string {
+	t := time.Now()
+	return t.Format("15:04:05")
 }
